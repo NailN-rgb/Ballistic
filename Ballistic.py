@@ -5,10 +5,20 @@ from LagrangePolynom import LagrangePolynom
 from ChordMethod import chord_method
 
 
+def find_polynom_derevative(pol):
+    new_qoefs = []
+
+    for i in range(len(pol)):
+        new_qoefs.append(pol[i] * i)
+
+    return lambda x: new_qoefs[1] + x * new_qoefs[2] + x ** 2 * new_qoefs[3]
+
+
 class Ballistic:
     g = 9.81
     x, y, vx, vy = [], [], [], []
     angle, energy, v0, x0, y0 = [], [], [], [], []
+    global_x, global_y = [], []
 
     def __init__(self, energy, reflect_param, alpha, k, m, x0, y0, N, ground):
         self.angle = alpha
@@ -78,20 +88,26 @@ class Ballistic:
 
         new_v = math.sqrt(self.vx[-1]**2 + self.vy[-1]**2)
         self.energy = (self.m * new_v ** 2)/2
+
+        self.global_x += self.x
+        self.global_y += self.y
+
         return self.x, self.y, self.vx, self.vy
 
     def reflection_initialize(self):
-        h = 0.1
-        interpolate_nodes, interpolate_values = self.x[-5:-1], self.x[-5:-1]
+        h = 0.0001
+        interpolate_nodes, interpolate_values = self.x[-5:-1], self.y[-5:-1]
         new_nodes_to_interpolation = np.linspace(max(interpolate_nodes), min(interpolate_nodes), 20)
         lagrange_polynom = LagrangePolynom(np.array(interpolate_nodes), np.array(interpolate_values), new_nodes_to_interpolation)
-        pol = lagrange_polynom.recalculate_in_new_nodes()
-        res_polynom = lambda x: pol[0] + x * pol[1] + x ** 2 * pol[2] + x ** 3 * pol[3] + x ** 4 * pol[4]
-        res_func = lambda x: pol[0] + x * pol[1] + x ** 2 * pol[2] + x ** 3 * pol[3] + x ** 4 * pol[4] - self.ground(x)
+        # pol = lagrange_polynom.recalculate_in_new_nodes()
+        pol = lagrange_polynom.L
+        res_polynom = lambda x: pol[0] + x * pol[1] + x ** 2 * pol[2] + x ** 3 * pol[3]
+        res_func = lambda x: res_polynom(x) - self.ground(x)
         root = chord_method(res_func, max(interpolate_nodes), min(interpolate_nodes))
 
+        polynom_derevative_func = find_polynom_derevative(pol)
+        derivative_in_root_point_polynom = polynom_derevative_func(root)
         derivative_in_root_point_ground_function = (self.ground(root + h) - self.ground(root)) / h
-        derivative_in_root_point_polynom = (res_polynom(root + h) - res_polynom(root) / h)
 
         angle_between_funcs = math.atan((derivative_in_root_point_polynom - derivative_in_root_point_ground_function)/\
                           (1 + derivative_in_root_point_polynom * derivative_in_root_point_ground_function))
@@ -100,21 +116,36 @@ class Ballistic:
 
         angle_falling = angle_between_funcs + angle_between_ground_and_x_coordline - 90
 
-        new_angle = 90 - angle_falling
+        # test
+        angle_falling = (math.atan(derivative_in_root_point_polynom))
+
+        if angle_between_funcs < 0:
+            angle_between_funcs += math.pi
+
+        new_angle = 180 - math.degrees(angle_between_funcs)
+
         new_x0, new_y0 = root, self.ground(root)
 
-        self.init_after_reflection(new_angle, new_x0, new_y0)
+        self.init_after_reflection(math.radians(new_angle), new_x0, new_y0)
+
+    # only for 4 pointed polynom
 
     def init_after_reflection(self, new_angle, x0, y0):
-        self.angle = new_angle
+        self.alpha = new_angle
         self.energy = self.energy * self.reflection_param
         self.v0 = math.sqrt(2 * self.energy / self.m)
         self.x0 = x0
         self.y0 = y0
+        self.x, self.y, self.vx, self.vy = [], [], [], []
 
     def visualize(self):
         pylab.subplot(2, 1, 1)
-        pylab.plot(self.x, self.y)
+        pylab.plot(self.global_x, self.global_y)
+
+        x_mesh = np.linspace(min(self.global_x), max(self.global_x), 100)
+        y_mesh = self.ground(x_mesh)
+        pylab.plot(x_mesh, y_mesh, 'r')
+
         pylab.title("График в координатах Х - У")
 
         # pylab.subplot(2, 1, 2)

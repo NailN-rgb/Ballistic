@@ -11,6 +11,7 @@ m = 1 # mass
 x0 = 0  # start coordinates
 y0 = 0  #
 yB = 0  # last point height
+g = 9.81
 
 # Explicit calculations (Test data)
 y = lambda t: y0 + v * t * math.sin(alpha) - g * (t ** 2) / 2

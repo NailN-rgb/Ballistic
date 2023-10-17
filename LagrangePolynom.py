@@ -72,6 +72,7 @@ def get_polynom(_xi, _yi):
 class LagrangePolynom:
     z = 0
     L = 0
+
     def __init__(self, x, y, new_x):
         self.x = x
         self.y = y
