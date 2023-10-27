@@ -1,23 +1,27 @@
 import math
 import pylab
-import  numpy as np
+import numpy as np
 from LagrangePolynom import LagrangePolynom
 from ChordMethod import chord_method
 
 
 def find_polynom_derevative(pol):
-    new_qoefs = []
-
+    # pol: array of coefficients of polynom.
+    # Only for polynom of 4-th order
+    new_coefficients = []
     for i in range(len(pol)):
-        new_qoefs.append(pol[i] * i)
+        new_coefficients.append(pol[i] * i)
 
-    return lambda x: new_qoefs[1] + x * new_qoefs[2] + x ** 2 * new_qoefs[3]
+    return lambda x: new_coefficients[1] + x * new_coefficients[2] + x ** 2 * new_coefficients[3]
 
 
 class Ballistic:
     g = 9.81
+    # arrays for local calculation variables
     x, y, vx, vy = [], [], [], []
+    # initial value variables
     angle, energy, v0, x0, y0 = [], [], [], [], []
+    # arrays for global trajectory coordinates
     global_x, global_y = [], []
 
     def __init__(self, energy, reflect_param, alpha, k, m, x0, y0, N, ground):
@@ -43,6 +47,7 @@ class Ballistic:
         return expl_sol_x(T), expl_sol_y(T)
 
     def numerical_solution(self):
+        # how to pre-calculate t - value?
         t = 3
         h = t / self.N
 
@@ -51,70 +56,79 @@ class Ballistic:
         self.vx.append(self.v0 * math.cos(self.alpha))
         self.vy.append(self.v0 * math.sin(self.alpha))
 
-        Fres = self.k * self.v0
-        beta = self.alpha + math.pi
+        FRes = self.k * self.v0  # Resulting power of resistance
+        beta = self.alpha + math.pi  # Resulting power vector directed against the vector of flight
 
+        # Runge - Kutta method main iteration process
         for i in range(self.N - 1):
             k11 = self.vx[i] * h
             k12 = self.vy[i] * h
-            k13 = (-Fres * math.cos(beta)) / self.m * h
-            k14 = (-self.g - (Fres * math.sin(beta)) / self.m) * h
+            k13 = (-FRes * math.cos(beta)) / self.m * h
+            k14 = (-self.g - (FRes * math.sin(beta)) / self.m) * h
 
             k21 = (self.vx[i] + k13 / 2) * h
             k22 = (self.vy[i] + k14 / 2) * h
-            k23 = ((-Fres * math.cos(beta)) / self.m) * h
-            k24 = (-self.g - (Fres * math.sin(beta)) / self.m) * h
+            k23 = ((-FRes * math.cos(beta)) / self.m) * h
+            k24 = (-self.g - (FRes * math.sin(beta)) / self.m) * h
 
             k31 = (self.vx[i] + k23 / 2) * h
             k32 = (self.vy[i] + k24 / 2) * h
-            k33 = ((-Fres * math.cos(beta)) / self.m) * h
-            k34 = (-self.g - (Fres * math.sin(beta)) / self.m) * h
+            k33 = ((-FRes * math.cos(beta)) / self.m) * h
+            k34 = (-self.g - (FRes * math.sin(beta)) / self.m) * h
 
             k41 = (self.vx[i] + k33 / 2) * h
             k42 = (self.vy[i] + k34 / 2) * h
-            k43 = ((-Fres * math.cos(beta)) / self.m) * h
-            k44 = (-self.g - (Fres * math.sin(beta)) / self.m) * h
+            k43 = ((-FRes * math.cos(beta)) / self.m) * h
+            k44 = (-self.g - (FRes * math.sin(beta)) / self.m) * h
 
             self.x.append(self.x[i] + (k11 + 2 * k21 + 3 * k31 + k41) / 6)
             self.y.append(self.y[i] + (k12 + 2 * k22 + 3 * k32 + k42) / 6)
             self.vx.append(self.vx[i] + (k13 + 2 * k23 + 3 * k33 + k43) / 6)
             self.vy.append(self.vy[i] + (k14 + 2 * k24 + 3 * k34 + k44) / 6)
 
-            Fres = self.k * math.sqrt(math.pow(self.vx[-1], 2) + math.pow(self.vy[-1], 2))
+            # Recalculation of resistance vector length and his direction
+            FRes = self.k * math.sqrt(math.pow(self.vx[-1], 2) + math.pow(self.vy[-1], 2))
             beta = math.atan(self.vy[-1] / self.vx[-1])
 
+            # if point under the ground line we exit from solving process
             if self.y[-1] <= self.ground(self.x[-1]):
                 break
 
-        new_v = math.sqrt(self.vx[-1]**2 + self.vy[-1]**2)
-        self.energy = (self.m * new_v ** 2)/2
+        # Recalculate the velocity vector direction and kinetic energy value
+        new_v = math.sqrt(self.vx[-1] ** 2 + self.vy[-1] ** 2)
+        self.energy = (self.m * new_v ** 2) / 2
 
+        # Write trajectory points to global arrays
         self.global_x += self.x
         self.global_y += self.y
 
+        # Зачем тут ретурн?
         return self.x, self.y, self.vx, self.vy
 
     def reflection_initialize(self):
-        h = 0.0001
+        # selection points for polynom building
         interpolate_nodes, interpolate_values = self.x[-5:-1], self.y[-5:-1]
         new_nodes_to_interpolation = np.linspace(max(interpolate_nodes), min(interpolate_nodes), 20)
-        lagrange_polynom = LagrangePolynom(np.array(interpolate_nodes), np.array(interpolate_values), new_nodes_to_interpolation)
-        # pol = lagrange_polynom.recalculate_in_new_nodes()
-        pol = lagrange_polynom.L
+
+        lagrange_polynom = LagrangePolynom(np.array(interpolate_nodes), np.array(interpolate_values),
+                                           new_nodes_to_interpolation)
+
+        pol = lagrange_polynom.L  # returns coefficients of built Lagrange polynom
         res_polynom = lambda x: pol[0] + x * pol[1] + x ** 2 * pol[2] + x ** 3 * pol[3]
         res_func = lambda x: res_polynom(x) - self.ground(x)
         root = chord_method(res_func, max(interpolate_nodes), min(interpolate_nodes))
 
-        polynom_derevative_func = find_polynom_derevative(pol)
-        derivative_in_root_point_polynom = polynom_derevative_func(root)
+        polynom_derivative_func = find_polynom_derevative(pol)
+        derivative_in_root_point_polynom = polynom_derivative_func(root)
+
+        h = 0.0001  # step for derivative calculation
         derivative_in_root_point_ground_function = (self.ground(root + h) - self.ground(root)) / h
 
-        angle_between_funcs = math.atan((derivative_in_root_point_polynom - derivative_in_root_point_ground_function)/\
-                          (1 + derivative_in_root_point_polynom * derivative_in_root_point_ground_function))
+        angle_between_funcs = math.atan((derivative_in_root_point_polynom - derivative_in_root_point_ground_function) / \
+                                        (
+                                                1 + derivative_in_root_point_polynom * derivative_in_root_point_ground_function))
 
         angle_between_ground_and_x_coordline = math.atan(derivative_in_root_point_ground_function)
-
-        angle_falling = angle_between_funcs + angle_between_ground_and_x_coordline - 90
 
         # test
         angle_falling = (math.atan(derivative_in_root_point_polynom))

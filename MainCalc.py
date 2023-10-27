@@ -12,11 +12,11 @@ from Ballistic import Ballistic
 
 kinetic_energy = 20
 reflection_energy_loss_param = 0.9
-alpha = math.radians(38.6)  # angle
-k = 1  # air resistance coeficient
+alpha = math.radians(38.6)  # angle: 38.6 main value
+k = 1  # air resistance coefficient
 m = 1  # mass
 x0, y0 = 0, 0  # start coordinates
-ground = lambda x: (x**2)/10   # ground level function
+ground = lambda x: (x**2)/10  # ground level function (x**2)/10 tested
 
 ball = Ballistic(kinetic_energy, reflection_energy_loss_param, alpha, k, m, x0, y0, 1000, ground)
 
