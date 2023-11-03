@@ -1,0 +1,36 @@
+import math
+import numpy as np
+import matplotlib.pyplot as plt
+
+from Back_Problem_Solver import BackSolver
+
+# initialize the back problem variables
+# need to find angle
+
+# impact point
+
+x_true, y_true = 3, 1
+
+# shoot point coordinates
+x_0, y_0 = 0, 0
+
+# Energy and speed module
+
+kinetic_energy = 100
+v = 10
+
+# air resistance coefficient
+
+k = 1
+
+# ground level function
+
+ground = lambda x: max(0, 1 - (x - 3)**2)
+
+tol = 0.1
+
+ball = BackSolver(x_true, y_true, x_0, y_0, v, k, kinetic_energy, ground, tol)
+ball.solve()
+
+
+

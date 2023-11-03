@@ -24,18 +24,25 @@ class Ballistic:
     # arrays for global trajectory coordinates
     global_x, global_y = [], []
 
-    def __init__(self, energy, reflect_param, alpha, k, m, x0, y0, N, ground):
+    def __init__(self, energy, reflect_param, alpha, k, v, x0, y0, N, ground):
         self.angle = alpha
         self.energy = energy
-        self.v0 = math.sqrt(2 * energy / m)
+        self.v0 = v
         self.reflection_param = reflect_param
         self.alpha = alpha
         self.k = k
-        self.m = m
+        self.m = (2 * energy)/pow(v, 2)
         self.x0 = x0
         self.y0 = y0
         self.N = N
         self.ground = ground
+
+        # Need to be here
+
+        self.x = [] if self.x else []
+        self.y = [] if self.y else []
+        self.vx = [] if self.vx else []
+        self.vy = [] if self.vy else []
 
     def explicit_solution(self, T):
         expl_sol_x = lambda t: self.x0 + (self.m / self.k) * self.v0 * math.cos(self.alpha) - \
@@ -81,10 +88,10 @@ class Ballistic:
             k43 = ((-FRes * math.cos(beta)) / self.m) * h
             k44 = (-self.g - (FRes * math.sin(beta)) / self.m) * h
 
-            self.x.append(self.x[i] + (k11 + 2 * k21 + 3 * k31 + k41) / 6)
-            self.y.append(self.y[i] + (k12 + 2 * k22 + 3 * k32 + k42) / 6)
-            self.vx.append(self.vx[i] + (k13 + 2 * k23 + 3 * k33 + k43) / 6)
-            self.vy.append(self.vy[i] + (k14 + 2 * k24 + 3 * k34 + k44) / 6)
+            self.x.append(self.x[i] + (k11 + 2 * k21 + 2 * k31 + k41) / 6)
+            self.y.append(self.y[i] + (k12 + 2 * k22 + 2 * k32 + k42) / 6)
+            self.vx.append(self.vx[i] + (k13 + 2 * k23 + 2 * k33 + k43) / 6)
+            self.vy.append(self.vy[i] + (k14 + 2 * k24 + 2 * k34 + k44) / 6)
 
             # Recalculation of resistance vector length and his direction
             FRes = self.k * math.sqrt(math.pow(self.vx[-1], 2) + math.pow(self.vy[-1], 2))
@@ -157,7 +164,9 @@ class Ballistic:
         pylab.plot(self.global_x, self.global_y)
 
         x_mesh = np.linspace(min(self.global_x), max(self.global_x), 100)
-        y_mesh = self.ground(x_mesh)
+        y_mesh = []
+        for i in range(len(x_mesh)):
+            y_mesh.append(self.ground(x_mesh[i]))
         pylab.plot(x_mesh, y_mesh, 'r')
 
         pylab.title("График в координатах Х - У")
