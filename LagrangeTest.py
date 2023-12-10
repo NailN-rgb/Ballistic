@@ -10,11 +10,11 @@ import matplotlib.pyplot as plot
 def testfunc1(x_points):
     y_points = []
     for i in range(len(x_points)):
-        y_points.append((x_points[i] + math.sin(x_points[i])) ** 2)
+        y_points.append(math.sin(x_points[i]))
     return y_points
 
 
-x = np.linspace(-5, 5, 3)
+x = np.linspace(-5, 5, 10)
 y = testfunc1(x)
 xnew = np.linspace(np.min(x), np.max(x), 100)
 pol = LagrangePolynom(x, y, xnew)

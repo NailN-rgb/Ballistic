@@ -10,7 +10,7 @@ def chord_method(func, x0, x_i, N=100, eps=1e-4):
         x_next = x_i - (func(x_i) * (x_i - x0)) / (func(x_i) - func(x0))
 
         if abs(x_next - x_i) < eps:
-            print(str(i) + " iteration")
+            # print(str(i) + " iteration")
             break
 
         if i == N - 1:
